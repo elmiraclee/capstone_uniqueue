@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import {
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -35,9 +35,18 @@ export default function AppHeader({
       if (user) {
         const parsedUser = JSON.parse(user);
 
-        setStudentName(
-          `${parsedUser.first_name}`
-        );
+        if (parsedUser.first_name) {
+          setStudentName(parsedUser.first_name);
+
+        } else if (parsedUser.name) {
+          setStudentName(parsedUser.name);
+
+        } else {
+          setStudentName(
+            parsedUser.full_name ||
+            parsedUser.username
+          );
+        }
       }
 
     } catch (error) {

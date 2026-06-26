@@ -33,7 +33,7 @@ export default function Login() {
       setLoading(true);
 
       const response = await fetch(
-        'http://192.168.1.30/uniqueue_api/login.php',
+        'http://192.168.1.6/uniqueue_api/login.php',
         {
           method: 'POST',
           headers: {
@@ -93,13 +93,18 @@ export default function Login() {
       if (data.role === 'student') {
         router.replace('/student/home');
       }
+      else if (data.role === 'office') {
+        router.replace('/office/home');
+      }
+      else if (data.role === 'admin') {
+        router.replace('/admin/home');
+      }
       else {
         Alert.alert(
           'Error',
           'Unknown user role'
         );
       }
-
     } catch (error) {
       console.log('LOGIN ERROR:', error);
 
@@ -130,7 +135,7 @@ export default function Login() {
         </Text>
 
         <CustomInput
-          placeholder="SR-Code"
+          placeholder="SR-Code/Username"
           value={srCode}
           onChangeText={setSrCode}
         />

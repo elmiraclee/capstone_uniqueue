@@ -93,7 +93,7 @@ export default function Signup() {
       setLoading(true);
 
       const response = await fetch(
-        'http://192.168.1.30/uniqueue_api/signup.php',
+        'http://192.168.1.6/uniqueue_api/signup.php',
         {
           method: 'POST',
           headers: {
