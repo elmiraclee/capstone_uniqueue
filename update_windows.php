@@ -1,0 +1,36 @@
+<?php
+
+header("Content-Type: application/json");
+include "db.php";
+
+$data = json_decode(file_get_contents("php://input"), true);
+
+$id = $data['id'];
+
+$stmt = mysqli_prepare($conn, "
+    UPDATE windows
+    SET name = ?, status = ?, speed = ?
+    WHERE id = ?
+");
+mysqli_stmt_bind_param($stmt, "sssi", $data['name'], $data['status'], $data['speed'], $id);
+mysqli_stmt_execute($stmt);
+
+// FIXED: "windows_document" -> "window_document"
+$delStmt = mysqli_prepare($conn, "
+    DELETE FROM window_document WHERE window_id = ?
+");
+mysqli_stmt_bind_param($delStmt, "i", $id);
+mysqli_stmt_execute($delStmt);
+
+$docStmt = mysqli_prepare($conn, "
+    INSERT INTO window_document (window_id, document_id) VALUES (?, ?)
+");
+
+foreach ($data['documents'] as $doc) {
+    mysqli_stmt_bind_param($docStmt, "ii", $id, $doc);
+    mysqli_stmt_execute($docStmt);
+}
+
+echo json_encode([
+    "success" => true
+]);
