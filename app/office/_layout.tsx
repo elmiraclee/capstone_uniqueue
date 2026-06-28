@@ -1,9 +1,14 @@
+import { Text } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Tabs, useSegments } from 'expo-router';
 
 import { COLORS } from '../../constants/theme';
 
 export default function OfficeLayout() {
+  const segments = useSegments();
+  const isInConfig = segments.some(s => s === 'config');
+
   return (
     <Tabs
       screenOptions={{
@@ -43,7 +48,16 @@ export default function OfficeLayout() {
         options={{
           title: 'Configuration',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings" size={size} color={color} />
+            <Ionicons
+              name="settings"
+              size={size}
+              color={isInConfig ? COLORS.primary : color}
+            />
+          ),
+          tabBarLabel: ({ color }) => (
+            <Text style={{ color: isInConfig ? COLORS.primary : color, fontSize: 10 }}>
+              Configuration
+            </Text>
           ),
         }}
       />

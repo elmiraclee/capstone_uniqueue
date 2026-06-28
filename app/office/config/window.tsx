@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +18,7 @@ import { useRouter } from 'expo-router';
 
 import AppHeader from '../../../components/layout/app-header';
 import ConfigDrawer from '../../../components/layout/config-drawer';
+import { API_URL } from '../../../constants/api';
 import { COLORS } from '../../../constants/theme';
 
 export default function Window() {
@@ -57,7 +58,7 @@ export default function Window() {
       const parsedUser = JSON.parse(user);
 
       const response = await fetch(
-        `http://192.168.1.6/uniqueue_api/get_windows.php?office_id=${parsedUser.office_id}`
+          `${API_URL}/get_windows.php?office_id=${parsedUser.office_id}`
       );
 
       const data = await response.json();
@@ -82,9 +83,9 @@ export default function Window() {
 
       const parsedUser = JSON.parse(user);
 
-      // FIXED: changed 192.168.1.17 -> 192.168.1.6 (consistent IP)
+      // FIXED: changed 192.168.1.17 -> 192.168.50.5 (consistent IP)
       const response = await fetch(
-        `http://192.168.1.6/uniqueue_api/get_documents.php?office_id=${parsedUser.office_id}`
+          `${API_URL}/get_documents.php?office_id=${parsedUser.office_id}`
       );
 
       const data = await response.json();
@@ -172,8 +173,8 @@ export default function Window() {
       };
 
       const url = isEdit
-        ? 'http://192.168.1.6/uniqueue_api/update_windows.php'
-        : 'http://192.168.1.6/uniqueue_api/add_windows.php';
+              ? `${API_URL}/update_windows.php`
+              : `${API_URL}/add_windows.php`;
 
       const response = await fetch(url, {
         method: 'POST',
@@ -213,7 +214,7 @@ export default function Window() {
           onPress: async () => {
 
             const response = await fetch(
-              'http://192.168.1.6/uniqueue_api/delete_windows.php',
+              `${API_URL}/delete_windows.php`,
               {
                 method: 'POST',
                 headers: {
@@ -471,10 +472,7 @@ export default function Window() {
           setDrawerVisible(false);
           router.push('/office/config/document');
         }}
-        onWindowPress={() => {
-          setDrawerVisible(false);
-          router.push('/office/config/window');
-        }}
+        onWindowPress={() => setDrawerVisible(false)}
         onCapacityPress={() => {
           setDrawerVisible(false);
           router.push('/office/config/capacity');

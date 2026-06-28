@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 
 import AppHeader from '../../../components/layout/app-header';
 import ConfigDrawer from '../../../components/layout/config-drawer';
+import { API_URL } from '../../../constants/api';
 import { COLORS } from '../../../constants/theme';
 
 export default function Document() {
@@ -41,30 +42,52 @@ export default function Document() {
   }, []);
 
   const loadDocuments = async () => {
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      const user = await AsyncStorage.getItem('user');
-      if (!user) return;
+    const user = await AsyncStorage.getItem('user');
 
-      const parsedUser = JSON.parse(user);
-
-      const response = await fetch(
-        `http://192.168.1.6/uniqueue_api/get_documents.php?office_id=${parsedUser.office_id}`
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        setDocuments(data.documents);
-      }
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
+    if (!user) {
+      Alert.alert('Error', 'User not found');
+      return;
     }
-  };
 
+    const parsedUser = JSON.parse(user);
+
+    console.log(
+      'FETCH URL:',
+      `${API_URL}/get_documents.php?office_id=${parsedUser.office_id}`
+    );
+
+    const response = await fetch(
+      `${API_URL}/get_documents.php?office_id=${parsedUser.office_id}`
+    );
+
+    const text = await response.text();
+
+    console.log('RAW RESPONSE:', text);
+
+    const data = JSON.parse(text);
+
+    if (data.success) {
+      setDocuments(data.documents);
+    } else {
+      Alert.alert(
+        'Error',
+        data.message || 'Failed to load documents'
+      );
+    }
+  } catch (error) {
+    console.log('LOAD DOCUMENT ERROR:', error);
+
+    Alert.alert(
+      'Error',
+      'Cannot load documents'
+    );
+  } finally {
+    setLoading(false);
+  }
+};
   const resetForm = () => {
     setName('');
     setDailyCapacity('');
@@ -119,8 +142,8 @@ export default function Document() {
       };
 
       const url = isEdit
-        ? 'http://192.168.1.17/uniqueue_api/update_documents.php'
-        : 'http://192.168.1.17/uniqueue_api/add_documents.php';
+        ? `${API_URL}/update_documents.php`
+        : `${API_URL}/add_documents.php`;
 
       const body = isEdit
         ? { ...payload, id: editingId }
@@ -157,7 +180,7 @@ export default function Document() {
         onPress: async () => {
           try {
             const res = await fetch(
-              'http://192.168.1.17/uniqueue_api/delete_documents.php',
+          `${API_URL}/delete_documents.php`,
               {
                 method: 'POST',
                 headers: {

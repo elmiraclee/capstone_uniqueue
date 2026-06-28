@@ -1,12 +1,13 @@
 import {
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    View,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 
 import AppHeader from '../../components/layout/app-header';
 import { COLORS } from '../../constants/theme';
+
 
 export default function Queue() {
 

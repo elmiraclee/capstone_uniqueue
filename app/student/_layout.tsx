@@ -23,7 +23,6 @@ export default function StudentTabsLayout() {
         name="home"
         options={{
           title: 'Home',
-
           tabBarIcon: ({ color, size }) => (
             <Ionicons
               name="home-outline"
@@ -38,7 +37,6 @@ export default function StudentTabsLayout() {
         name="queue"
         options={{
           title: 'Queue',
-
           tabBarIcon: ({ color, size }) => (
             <Ionicons
               name="people-outline"
@@ -53,7 +51,6 @@ export default function StudentTabsLayout() {
         name="profile"
         options={{
           title: 'Profile',
-
           tabBarIcon: ({ color, size }) => (
             <Ionicons
               name="person-outline"
@@ -61,6 +58,14 @@ export default function StudentTabsLayout() {
               color={color}
             />
           ),
+        }}
+      />
+
+      {/* Hide queues folder from tabs */}
+      <Tabs.Screen
+        name="queues"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
