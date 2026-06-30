@@ -17,7 +17,6 @@ import { useRouter } from 'expo-router';
 
 import AppHeader from '../../../components/layout/app-header';
 import ConfigDrawer from '../../../components/layout/config-drawer';
-import { API_URL } from '../../../constants/api';
 import { COLORS } from '../../../constants/theme';
 
 export default function Document() {
@@ -33,7 +32,6 @@ export default function Document() {
   const [loading, setLoading] = useState(false);
 
   const [name, setName] = useState('');
-  const [dailyCapacity, setDailyCapacity] = useState('');
   const [processingTime, setProcessingTime] = useState('');
   const [requirements, setRequirements] = useState('');
 
@@ -41,7 +39,7 @@ export default function Document() {
     loadDocuments();
   }, []);
 
-  const loadDocuments = async () => {
+ const loadDocuments = async () => {
   try {
     setLoading(true);
 
@@ -54,20 +52,20 @@ export default function Document() {
 
     const parsedUser = JSON.parse(user);
 
-    console.log(
-      'FETCH URL:',
-      `${API_URL}/get_documents.php?office_id=${parsedUser.office_id}`
-    );
+    const url =
+      `http://192.168.1.9/uniqueue_api/get_documents.php?office_id=${parsedUser.office_id}`;
 
-    const response = await fetch(
-      `${API_URL}/get_documents.php?office_id=${parsedUser.office_id}`
-    );
+    console.log('FETCH URL:', url);
+
+    const response = await fetch(url);
 
     const text = await response.text();
 
     console.log('RAW RESPONSE:', text);
 
     const data = JSON.parse(text);
+
+    console.log('PARSED DATA:', data);
 
     if (data.success) {
       setDocuments(data.documents);
@@ -90,7 +88,6 @@ export default function Document() {
 };
   const resetForm = () => {
     setName('');
-    setDailyCapacity('');
     setProcessingTime('');
     setRequirements('');
     setEditingId(null);
@@ -108,7 +105,6 @@ export default function Document() {
 
     setEditingId(item.id);
     setName(item.name);
-    setDailyCapacity(String(item.daily_capacity));
     setProcessingTime(String(item.processing_time));
 
     setRequirements(
@@ -125,25 +121,24 @@ export default function Document() {
 
       const parsedUser = JSON.parse(user);
 
-      if (!name || !dailyCapacity || !processingTime) {
+      if (!name || !processingTime) {
         Alert.alert('Error', 'Please fill all fields');
         return;
       }
 
-      const payload = {
-        office_id: parsedUser.office_id,
-        name,
-        daily_capacity: parseInt(dailyCapacity),
-        processing_time: parseInt(processingTime),
-        requirements: requirements
-          .split(',')
-          .map(r => r.trim())
-          .filter(r => r.length > 0),
-      };
+  const payload = {
+    office_id: parsedUser.office_id,
+    name,
+    processing_time: parseInt(processingTime),
+    requirements: requirements
+      .split(',')
+      .map(r => r.trim())
+      .filter(r => r.length > 0),
+  };
 
       const url = isEdit
-        ? `${API_URL}/update_documents.php`
-        : `${API_URL}/add_documents.php`;
+        ? 'http://192.168.1.9/uniqueue_api/update_documents.php'
+        : 'http://192.168.1.9/uniqueue_api/add_documents.php';
 
       const body = isEdit
         ? { ...payload, id: editingId }
@@ -180,7 +175,7 @@ export default function Document() {
         onPress: async () => {
           try {
             const res = await fetch(
-          `${API_URL}/delete_documents.php`,
+          'http://192.168.1.9/uniqueue_api/delete_documents.php',
               {
                 method: 'POST',
                 headers: {
@@ -234,10 +229,6 @@ export default function Document() {
             <Text style={styles.title}>{item.name}</Text>
 
             <Text style={styles.text}>
-              Daily Capacity: {item.daily_capacity}
-            </Text>
-
-            <Text style={styles.text}>
               Processing Time: {item.processing_time} mins
             </Text>
 
@@ -283,35 +274,31 @@ export default function Document() {
               {isEdit ? 'Edit Document' : 'Add Document'}
             </Text>
 
-            <TextInput
-              placeholder="Document Name"
-              value={name}
-              onChangeText={setName}
-              style={styles.input}
-            />
+      <Text style={styles.label}>Document Name</Text>
+      <TextInput
+        placeholder="Enter document name"
+        value={name}
+        onChangeText={setName}
+        style={styles.input}
+      />
 
-            <TextInput
-              placeholder="Daily Capacity"
-              value={dailyCapacity}
-              onChangeText={setDailyCapacity}
-              keyboardType="numeric"
-              style={styles.input}
-            />
+      <Text style={styles.label}>Processing Time (minutes)</Text>
+      <TextInput
+        placeholder="Enter processing time"
+        value={processingTime}
+        onChangeText={setProcessingTime}
+        keyboardType="numeric"
+        style={styles.input}
+      />
 
-            <TextInput
-              placeholder="Processing Time"
-              value={processingTime}
-              onChangeText={setProcessingTime}
-              keyboardType="numeric"
-              style={styles.input}
-            />
-
-            <TextInput
-              placeholder="Requirements (comma separated)"
-              value={requirements}
-              onChangeText={setRequirements}
-              style={styles.input}
-            />
+      <Text style={styles.label}>Requirements</Text>
+      <TextInput
+        placeholder="Enter requirements separated by commas"
+        value={requirements}
+        onChangeText={setRequirements}
+        style={styles.input}
+        multiline
+      />
 
             <Pressable style={styles.saveBtn} onPress={saveDocument}>
               <Text style={styles.saveBtnText}>
@@ -416,6 +403,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     padding: 10,
     borderRadius: 8,
+  },
+
+  label: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: COLORS.text,
+  marginBottom: 5,
+  marginTop: 10,
   },
 
   saveBtn: {

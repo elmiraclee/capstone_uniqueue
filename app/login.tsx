@@ -14,7 +14,6 @@ import { useRouter } from 'expo-router';
 
 import CustomButton from '../components/ui/custom-button';
 import CustomInput from '../components/ui/custom-input';
-import { API_URL } from '../constants/api';
 import { COLORS } from '../constants/theme';
 
 export default function Login() {
@@ -34,7 +33,7 @@ export default function Login() {
       setLoading(true);
 
       const response = await fetch(
-      `${API_URL}/login.php`,
+      'http://192.168.1.9/uniqueue_api/login.php',
       {
         method: 'POST',
         headers: {

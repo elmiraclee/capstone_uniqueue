@@ -18,7 +18,6 @@ import { useRouter } from 'expo-router';
 
 import AppHeader from '../../../components/layout/app-header';
 import ConfigDrawer from '../../../components/layout/config-drawer';
-import { API_URL } from '../../../constants/api';
 import { COLORS } from '../../../constants/theme';
 
 export default function Window() {
@@ -42,6 +41,10 @@ export default function Window() {
   const [speed, setSpeed] = useState('normal');
 
   const [selectedDocuments, setSelectedDocuments] = useState<number[]>([]);
+  const [queueType, setQueueType] = useState('walkin');
+  const [appointmentDate, setAppointmentDate] = useState('');
+
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadWindows();
@@ -58,7 +61,7 @@ export default function Window() {
       const parsedUser = JSON.parse(user);
 
       const response = await fetch(
-          `${API_URL}/get_windows.php?office_id=${parsedUser.office_id}`
+         `http://192.168.1.9/uniqueue_api/get_windows.php?office_id=${parsedUser.office_id}`
       );
 
       const data = await response.json();
@@ -85,7 +88,7 @@ export default function Window() {
 
       // FIXED: changed 192.168.1.17 -> 192.168.50.5 (consistent IP)
       const response = await fetch(
-          `${API_URL}/get_documents.php?office_id=${parsedUser.office_id}`
+          `http://192.168.1.9/uniqueue_api/get_documents.php?office_id=${parsedUser.office_id}`
       );
 
       const data = await response.json();
@@ -104,6 +107,8 @@ export default function Window() {
     setName('');
     setStatus('open');
     setSpeed('normal');
+    setQueueType('walkin');
+    setAppointmentDate('');
     setSelectedDocuments([]);
 
     setEditingId(null);
@@ -126,6 +131,8 @@ export default function Window() {
     setName(item.name);
     setStatus(item.status);
     setSpeed(item.speed);
+    setQueueType(item.queue_type || 'walkin');
+    setAppointmentDate(item.appointment_date || '');
 
     const ids = item.documents.map((doc: any) => doc.id);
 
@@ -151,54 +158,99 @@ export default function Window() {
 
   const saveWindow = async () => {
 
-    try {
+  if (saving) return;
 
-      const user = await AsyncStorage.getItem('user');
-      if (!user) return;
+  try {
 
-      const parsedUser = JSON.parse(user);
+    setSaving(true);
 
-      if (!name) {
-        Alert.alert('Error', 'Please enter window name');
-        return;
-      }
+    const user = await AsyncStorage.getItem('user');
+    if (!user) return;
 
-      const payload = {
-        id: editingId,
-        office_id: parsedUser.office_id,
-        name,
-        status,
-        speed,
-        documents: selectedDocuments,
-      };
+    const parsedUser = JSON.parse(user);
 
-      const url = isEdit
-              ? `${API_URL}/update_windows.php`
-              : `${API_URL}/add_windows.php`;
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-
-        setModalVisible(false);
-
-        resetForm();
-
-        loadWindows();
-      }
-
-    } catch (error) {
-      console.log(error);
+    if (!name.trim()) {
+      Alert.alert('Error', 'Please enter window name');
+      return;
     }
-  };
+
+    if (
+      queueType === 'appointment' &&
+      !appointmentDate
+    ) {
+      Alert.alert(
+        'Error',
+        'Please enter appointment date'
+      );
+      return;
+    }
+
+    const payload = {
+      id: editingId,
+      office_id: parsedUser.office_id,
+      name,
+      status,
+      speed,
+      queue_type: queueType,
+      appointment_date:
+        queueType === 'appointment'
+          ? appointmentDate
+          : null,
+      documents:
+        queueType === 'walkin'
+          ? selectedDocuments
+          : [],
+    };
+
+    const url = isEdit
+      ? 'http://192.168.1.9/uniqueue_api/update_windows.php'
+      : 'http://192.168.1.9/uniqueue_api/add_windows.php';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+if (data.success) {
+
+  Alert.alert(
+    'Success',
+    data.message || 'Window saved successfully.',
+    [
+      {
+        text: 'OK',
+        onPress: () => {
+          setModalVisible(false);
+          resetForm();
+          loadWindows();
+        }
+      }
+    ],
+    {
+      cancelable: false
+    }
+  );
+
+} else {
+
+  Alert.alert(
+    'Error',
+    data.message || 'Unable to save window'
+  );
+
+}
+  } catch (error) {
+    console.log(error);
+    Alert.alert('Error', 'Something went wrong');
+  } finally {
+    setSaving(false);
+  }
+};
 
   const deleteWindow = async (id: number) => {
 
@@ -214,7 +266,7 @@ export default function Window() {
           onPress: async () => {
 
             const response = await fetch(
-              `${API_URL}/delete_windows.php`,
+              'http://192.168.1.9/uniqueue_api/delete_windows.php',
               {
                 method: 'POST',
                 headers: {
@@ -279,15 +331,40 @@ export default function Window() {
               Speed: {item.speed}
             </Text>
 
-            <Text style={styles.docTitle}>
-              Documents Handled:
+            <Text>
+              Queue Type:
+              {item.queue_type === 'walkin'
+                ? ' Walk-in'
+                : ' Appointment'}
             </Text>
+            
+            {item.queue_type === 'appointment' && (
+            <Text>
+              Appointment Date: {item.appointment_date}
+            </Text>
+          )}
+            
+          <Text style={styles.docTitle}>
+            Documents Handled:
+          </Text>
 
-            {item.documents.map((doc: any) => (
-              <Text key={doc.id}>
-                • {doc.name}
+          {item.queue_type === 'walkin' ? (
+            item.documents?.length > 0 ? (
+              item.documents.map((doc: any) => (
+                <Text key={doc.id}>
+                  • {doc.name}
+                </Text>
+              ))
+            ) : (
+              <Text style={{ color: '#999' }}>
+                No documents assigned
               </Text>
-            ))}
+            )
+          ) : (
+            <Text style={{ color: '#999' }}>
+              Not applicable for Appointment
+            </Text>
+          )}
 
             <View style={styles.actionsRow}>
                           <Pressable
@@ -403,38 +480,95 @@ export default function Window() {
               ))}
             </View>
 
-            {/* Documents */}
-            <Text style={styles.label}>Documents</Text>
-            <View style={styles.docList}>
-              {documents.map((doc) => {
-                const selected = selectedDocuments.includes(doc.id);
-                return (
-                  <Pressable
-                    key={doc.id}
+            {/* Queue Type */}
+            <Text style={styles.label}>Queue Type</Text>
+            <View style={styles.pillRow}>
+              {['walkin', 'appointment'].map(type => (
+                <Pressable
+                  key={type}
+                  style={[
+                    styles.pill,
+                    queueType === type && styles.pillActive,
+                  ]}
+                  onPress={() => setQueueType(type)}
+                >
+                  <Text
                     style={[
-                      styles.docRow,
-                      selected && styles.docRowActive,
+                      styles.pillText,
+                      queueType === type && styles.pillTextActive,
                     ]}
-                    onPress={() => toggleDocument(doc.id)}
                   >
-                    <View style={[
-                      styles.checkbox,
-                      selected && styles.checkboxActive,
-                    ]}>
-                      {selected && (
-                        <Ionicons name="checkmark" size={13} color="#fff" />
-                      )}
-                    </View>
-                    <Text style={[
-                      styles.docRowText,
-                      selected && styles.docRowTextActive,
-                    ]}>
-                      {doc.name}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+                    {type === 'walkin'
+                    ? 'Walk-in'
+                    : 'Appointment'}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
+
+            {/* Documents */}
+           {queueType === 'walkin' && (
+            <>
+              <Text style={styles.label}>Documents</Text>
+
+              <View style={styles.docList}>
+                {documents.map((doc) => {
+                  const selected = selectedDocuments.includes(doc.id);
+
+                  return (
+                    <Pressable
+                      key={doc.id}
+                      style={[
+                        styles.docRow,
+                        selected && styles.docRowActive,
+                      ]}
+                      onPress={() => toggleDocument(doc.id)}
+                    >
+                      <View
+                        style={[
+                          styles.checkbox,
+                          selected && styles.checkboxActive,
+                        ]}
+                      >
+                        {selected && (
+                          <Ionicons
+                            name="checkmark"
+                            size={13}
+                            color="#fff"
+                          />
+                        )}
+                      </View>
+
+                      <Text
+                        style={[
+                          styles.docRowText,
+                          selected && styles.docRowTextActive,
+                        ]}
+                      >
+                        {doc.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          )}
+
+         {queueType === 'appointment' && (
+          <>
+            <Text style={styles.label}>
+              Appointment Date
+            </Text>
+
+            <TextInput
+              placeholder="YYYY-MM-DD"
+              value={appointmentDate}
+              onChangeText={setAppointmentDate}
+              style={styles.input}
+              placeholderTextColor="#aaa"
+            />
+          </>
+        )}
 
             {/* Action buttons */}
             <View style={styles.modalActions}>
@@ -448,14 +582,22 @@ export default function Window() {
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </Pressable>
 
-              <Pressable
-                style={styles.saveBtn}
-                onPress={saveWindow}
-              >
-                <Text style={styles.saveBtnText}>
-                  {isEdit ? 'Save Changes' : 'Add Window'}
-                </Text>
-              </Pressable>
+        <Pressable
+          style={[
+            styles.saveBtn,
+            saving && { opacity: 0.6 }
+          ]}
+          disabled={saving}
+          onPress={saveWindow}
+        >
+          <Text style={styles.saveBtnText}>
+            {saving
+              ? 'Saving...'
+              : isEdit
+              ? 'Save Changes'
+              : 'Add Window'}
+          </Text>
+        </Pressable>
             </View>
 
           </View>

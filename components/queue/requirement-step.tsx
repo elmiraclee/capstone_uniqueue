@@ -56,20 +56,29 @@ export default function RequirementStep({
   };
 
   const next = () => {
-    if (checkedRequirements.length !== requirements.length) {
+    const checkedCurrentRequirements =
+      requirements.filter((req) =>
+        checkedRequirements.includes(req)
+      );
+
+    if (
+      checkedCurrentRequirements.length <
+      requirements.length
+    ) {
       Alert.alert(
         'Incomplete',
         'Please check all requirements before proceeding.'
       );
       return;
     }
+
     onNext();
   };
 
-  const checkedCount = checkedRequirements.filter((r) =>
-    requirements.includes(r)
+  const checkedCount = requirements.filter((req) =>
+    checkedRequirements.includes(req)
   ).length;
-
+  
   return (
     <View>
       <Text style={styles.title}>

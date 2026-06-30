@@ -14,7 +14,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { router } from 'expo-router';
 import AppHeader from '../../components/layout/app-header';
-import { API_URL } from '../../constants/api';
 import { COLORS } from '../../constants/theme';
 
 
@@ -56,7 +55,7 @@ export default function StudentHome() {
   const fetchOffices = async () => {
     try {
       const response = await fetch(
-        `${API_URL}/get_offices.php`
+       'http://192.168.1.9/uniqueue_api/get_offices.php'
       );
 
       const data = await response.json();

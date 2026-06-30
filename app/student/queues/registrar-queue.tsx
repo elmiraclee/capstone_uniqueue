@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import {
   Alert,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 
@@ -16,8 +18,6 @@ import QuantityStep from '../../../components/queue/quantity-step';
 import QueueTypeStep from '../../../components/queue/queue-type-step';
 import RequirementStep from '../../../components/queue/requirement-step';
 import ReviewStep from '../../../components/queue/review-step';
-
-import { API_URL } from '../../../constants/api';
 import { COLORS } from '../../../constants/theme';
 
 export interface Document {
@@ -216,6 +216,10 @@ export default function RegistrarQueue() {
   const [checkedRequirements, setCheckedRequirements] = useState<string[]>([]);
   const [quantities, setQuantities] = useState<Record<number, number>>({});
 
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [queueNumber, setQueueNumber] = useState(''); 
+  const [assignedWindow, setAssignedWindow] = useState('');
+
   useEffect(() => {
     loadUser();
     fetchDocuments();
@@ -232,7 +236,7 @@ export default function RegistrarQueue() {
   const fetchDocuments = async () => {
     try {
       const response = await fetch(
-        `${API_URL}/get_documents.php?office_id=1`
+        'http://192.168.1.9/uniqueue_api/get_documents.php?office_id=1'
       );
       const data = await response.json();
       if (data.success) {
@@ -251,7 +255,7 @@ export default function RegistrarQueue() {
       }));
 
       const response = await fetch(
-        `${API_URL}/join_registrar_queue.php`,
+        'http://192.168.1.9/uniqueue_api/join_registrar_queue.php',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -273,10 +277,9 @@ export default function RegistrarQueue() {
       const data = await response.json();
 
       if (data.success) {
-        Alert.alert(
-          'Success',
-          `Queue Number: ${data.queue_number}`
-        );
+        setQueueNumber(data.queue_number);
+        setAssignedWindow(data.window_name || 'Not Assigned');
+        setShowSuccessModal(true);
       } else {
         Alert.alert('Error', data.message);
       }
@@ -380,7 +383,55 @@ export default function RegistrarQueue() {
           />
         )}
       </ScrollView>
+
+<Modal
+  visible={showSuccessModal}
+  transparent
+  animationType="fade"
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalCard}>
+      <Text style={styles.modalTitle}>
+        Queue Created
+      </Text>
+
+      <Text style={styles.queueNumberText}>
+        {queueNumber}
+      </Text>
+
+      <Text style={styles.modalLabel}>
+        Assigned Counter
+      </Text>
+
+      <Text style={styles.windowText}>
+        {assignedWindow}
+      </Text>
+
+      <TouchableOpacity
+        style={styles.modalButton}
+        onPress={() => {
+          setShowSuccessModal(false);
+
+          // reset form
+          setStep(1);
+          setQueueType('walkin');
+          setPriority(false);
+          setPriorityReason('');
+          setAppointmentDate('');
+          setSelectedDocuments([]);
+          setCheckedRequirements([]);
+          setQuantities({});
+        }}
+      >
+        <Text style={styles.modalButtonText}>
+          OK
+        </Text>
+      </TouchableOpacity>
     </View>
+  </View>
+</Modal>
+
+</View>
   );
 }
 
@@ -394,4 +445,59 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 50,
   },
+
+  modalOverlay: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: 'rgba(0,0,0,0.5)',
+},
+
+modalCard: {
+  width: '85%',
+  backgroundColor: '#fff',
+  borderRadius: 20,
+  padding: 30,
+  alignItems: 'center',
+},
+
+modalTitle: {
+  fontSize: 24,
+  fontWeight: '700',
+  color: COLORS.primary,
+  marginBottom: 15,
+},
+
+queueNumberText: {
+  fontSize: 48,
+  fontWeight: 'bold',
+  color: COLORS.primary,
+  marginBottom: 20,
+},
+
+modalLabel: {
+  fontSize: 14,
+  color: COLORS.gray,
+},
+
+windowText: {
+  fontSize: 22,
+  fontWeight: '700',
+  color: COLORS.secondary,
+  marginTop: 8,
+},
+
+modalButton: {
+  marginTop: 30,
+  backgroundColor: COLORS.primary,
+  paddingHorizontal: 40,
+  paddingVertical: 14,
+  borderRadius: 12,
+},
+
+modalButtonText: {
+  color: '#fff',
+  fontSize: 16,
+  fontWeight: '700',
+},
 });

@@ -134,26 +134,46 @@ export default function ReviewStep({
           </View>
         )}
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={onSubmit}
-      >
-        <Text style={styles.buttonText}>
-          Join queue
-        </Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.button,
+            queueType === 'appointment' &&
+            appointmentDate.trim() === ''
+              ? styles.disabledButton
+              : null,
+          ]}
+          disabled={
+            queueType === 'appointment' &&
+            appointmentDate.trim() === ''
+          }
+          onPress={() => {
+            if (
+              queueType === 'appointment' &&
+              appointmentDate.trim() === ''
+            ) {
+              alert('Please select an appointment date.');
+              return;
+            }
 
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={onBack}
-      >
-        <Text style={styles.backButtonText}>
-          Back
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
+            onSubmit();
+          }}
+        >
+          <Text style={styles.buttonText}>
+            Join queue
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={onBack}
+        >
+          <Text style={styles.backButtonText}>
+            Back
+          </Text>
+        </TouchableOpacity>
+            </View>
+          );
+        }
 
 const styles = StyleSheet.create({
   title: {
@@ -271,4 +291,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 14,
   },
+
+  disabledButton: {
+  opacity: 0.5,
+},
 });
