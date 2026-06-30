@@ -6,10 +6,21 @@ include "db.php";
 $office_id = $_GET['office_id'];
 
 $stmt = mysqli_prepare($conn, "
-    SELECT * FROM windows WHERE office_id = ?
+    SELECT
+        id,
+        name,
+        office_id,
+        status,
+        speed,
+        queue_type,
+        appointment_date
+    FROM windows
+    WHERE office_id = ?
 ");
+
 mysqli_stmt_bind_param($stmt, "i", $office_id);
 mysqli_stmt_execute($stmt);
+
 $result = mysqli_stmt_get_result($stmt);
 
 $windows = [];
@@ -20,26 +31,42 @@ while ($row = mysqli_fetch_assoc($result)) {
 
     $docs = [];
 
-    // FIXED: "windows_document" -> "window_document"
-    $docStmt = mysqli_prepare($conn, "
-        SELECT d.id, d.name
-        FROM window_document wd
-        INNER JOIN documents d ON wd.document_id = d.id
-        WHERE wd.window_id = ?
-    ");
-    mysqli_stmt_bind_param($docStmt, "i", $window_id);
-    mysqli_stmt_execute($docStmt);
-    $docResult = mysqli_stmt_get_result($docStmt);
+    // Kukunin lang ang documents kapag walk-in window
+    if ($row['queue_type'] === 'walkin') {
 
-    while ($doc = mysqli_fetch_assoc($docResult)) {
-        $docs[] = $doc;
+        $docStmt = mysqli_prepare($conn, "
+            SELECT d.id, d.name
+            FROM window_document wd
+            INNER JOIN documents d
+                ON wd.document_id = d.id
+            WHERE wd.window_id = ?
+        ");
+
+        mysqli_stmt_bind_param($docStmt, "i", $window_id);
+        mysqli_stmt_execute($docStmt);
+
+        $docResult = mysqli_stmt_get_result($docStmt);
+
+        while ($doc = mysqli_fetch_assoc($docResult)) {
+            $docs[] = $doc;
+        }
     }
 
-    $row['documents'] = $docs;
-    $windows[] = $row;
+    $windows[] = [
+        "id" => $row['id'],
+        "name" => $row['name'],
+        "office_id" => $row['office_id'],
+        "status" => $row['status'],
+        "speed" => $row['speed'],
+        "queue_type" => $row['queue_type'],
+        "appointment_date" => $row['appointment_date'],
+        "documents" => $docs
+    ];
 }
 
 echo json_encode([
     "success" => true,
     "windows" => $windows
 ]);
+
+?>

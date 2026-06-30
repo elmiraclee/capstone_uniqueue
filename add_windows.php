@@ -2,7 +2,6 @@
 
 header("Content-Type: application/json");
 
-// Ipakita ang PHP errors
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -18,14 +17,24 @@ if (!$data) {
     exit;
 }
 
-$name      = $data['name'] ?? '';
+$name = $data['name'] ?? '';
 $office_id = $data['office_id'] ?? 0;
-$status    = $data['status'] ?? '';
-$speed     = $data['speed'] ?? '';
+$status = $data['status'] ?? '';
+$speed = $data['speed'] ?? '';
+$queue_type = $data['queue_type'] ?? 'walkin';
+$appointment_date = $data['appointment_date'] ?? null;
 
 $stmt = mysqli_prepare($conn, "
-    INSERT INTO windows (name, office_id, status, speed)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO windows
+    (
+        name,
+        office_id,
+        status,
+        speed,
+        queue_type,
+        appointment_date
+    )
+    VALUES (?, ?, ?, ?, ?, ?)
 ");
 
 if (!$stmt) {
@@ -36,7 +45,16 @@ if (!$stmt) {
     exit;
 }
 
-mysqli_stmt_bind_param($stmt, "siss", $name, $office_id, $status, $speed);
+mysqli_stmt_bind_param(
+    $stmt,
+    "sissss",
+    $name,
+    $office_id,
+    $status,
+    $speed,
+    $queue_type,
+    $appointment_date
+);
 
 if (!mysqli_stmt_execute($stmt)) {
     echo json_encode([
@@ -48,21 +66,32 @@ if (!mysqli_stmt_execute($stmt)) {
 
 $window_id = mysqli_insert_id($conn);
 
-if (!empty($data['documents'])) {
+// Mag-save lang ng documents kapag walk-in window
+if (
+    $queue_type === 'walkin' &&
+    !empty($data['documents'])
+) {
 
     $docStmt = mysqli_prepare($conn, "
-        INSERT INTO window_document (window_id, document_id)
+        INSERT INTO window_document
+        (window_id, document_id)
         VALUES (?, ?)
     ");
 
     foreach ($data['documents'] as $doc) {
-        mysqli_stmt_bind_param($docStmt, "ii", $window_id, $doc);
+
+        mysqli_stmt_bind_param(
+            $docStmt,
+            "ii",
+            $window_id,
+            $doc
+        );
+
         mysqli_stmt_execute($docStmt);
     }
 }
 
 echo json_encode([
     "success" => true,
-    "message" => "Window added successfully"
 ]);
 ?>
